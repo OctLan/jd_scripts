@@ -118,15 +118,15 @@ function getTaskList() {
           if (safeGet(data)) {
             data = JSON.parse(data);
             if(data.retCode ===0){
-              for (task of data.data.tasks) {
-                if(task.taskState===1){
-                  console.log(`去做${task.taskName}任务`)
-                  await doTask(task.taskId);
-                  await $.wait(1000)
-                  await finishTask(task.taskId);
-                  await $.wait(1000)
-                }
-              }
+              // for (task of data.data.tasks) {
+              //   if(task.taskState===1){
+              //     console.log(`去做${task.taskName}任务`)
+              //     await doTask(task.taskId);
+              //     await $.wait(1000)
+              //     await finishTask(task.taskId);
+              //     await $.wait(1000)
+              //   }
+              // }
             }else{
               console.log(`签到失败，错误信息${data.errMsg}`)
             }
