@@ -675,21 +675,17 @@
  }
  
  function doTask(body, fnId = 'scan') {
-    var url = `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`;
-    if( fnId === 'followShop' ){
-        url += '&' + body;
-    }
    return new Promise(resolve => {
      $.post({
-       url: url,
+       url: `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE` ,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
-         'content-type': fnId === 'followGood' ? 'application/x-www-form-urlencoded' : 'application/json',
+         'content-type': (fnId === 'followGood' || fnId === 'followShop'  ) ? 'application/x-www-form-urlencoded' : 'application/json',
          'origin': 'https://h5.m.jd.com',
          'accept-language': 'zh-cn',
          'referer': 'https://h5.m.jd.com/',
-         'Content-Type': fnId === 'followGood' ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
+         'Content-Type': (fnId === 'followGood' || fnId === 'followShop'  ) ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
          "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
          'cookie': cookie
        },
