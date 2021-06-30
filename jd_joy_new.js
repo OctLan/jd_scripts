@@ -675,9 +675,13 @@
  }
  
  function doTask(body, fnId = 'scan') {
+    var url = `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`;
+    if( fnId === 'followShop' ){
+        url += '&' + body;
+    }
    return new Promise(resolve => {
      $.post({
-       url: `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE` + '&' + body ,
+       url: url,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
