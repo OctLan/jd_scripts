@@ -578,14 +578,25 @@
            await $.wait(5000);
          }
          if (tp.taskName === '浏览频道') {
-           for (let i = 0; i < 3; i++) {
+           for (let i = 0; i < 1; i++) {
              console.log(`\t第${i + 1}次浏览频道 检查遗漏`)
              let followChannelList = await getFollowChannels();
              for (let t of followChannelList['datas']) {
                if (!t.status) {
                  console.log('┖', t['channelName'])
-                 await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel'}))
-                 await $.wait(5000)
+
+                 const body = {
+                  "channelId": t.channelId,
+                  "taskType": "FollowChannel",
+                  "reqSource": "weapp"
+                };
+                const scanMarketRes = await scanMarket('scan', body);
+                console.log(`浏览频道-结果::${JSON.stringify(scanMarketRes)}`)
+
+                // await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel' , "reqSource": "weapp" }))
+
+
+                //await $.wait(5000)
                }
              }
              await $.wait(5000)
@@ -615,8 +626,8 @@
          if (tp.taskName === '关注店铺') {
            for (let t of tp.followShops) {
              if (!t.status) {
-               await doTask(`shopId=${t.shopId}`, 'followShop')
-               await $.wait(5000)
+                const followShopRes = await followShop(t.shopId);
+                console.log(`关注店铺结果::${JSON.stringify(followShopRes)}`)
              }
            }
          }
@@ -625,14 +636,95 @@
    }
  })()
  
+//小程序逛会场，浏览频道，关注商品API
+function scanMarket(type, body, cType = 'application/json') {
+  return new Promise(resolve => {
+    // const url = `${weAppUrl}/${type}`;
+    const host = `draw.jdfcloud.com`;
+    const reqSource = 'weapp';
+    let opt = {
+      // url: "//jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5",
+      url: `//draw.jdfcloud.com/common/pet/${type}?reqSource=weapp&invokeKey=Oex5GmEuqGep1WLC`,
+      method: "POST",
+      data: body,
+      credentials: "include",
+      header: {"content-type": cType}
+    }
+    const url = "https:"+ taroRequest(opt)['url']
+    if (cType === 'application/json') {
+      body = JSON.stringify(body)
+    }
+    $.post(taskPostUrl(url, body, reqSource, host, cType), (err, resp, data) => {
+      try {
+        if (err) {
+          console.log('\n京东宠汪汪: API查询请求失败 ‼️‼️')
+        } else {
+          data = JSON.parse(data);
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve(data);
+      }
+    })
+  })
+}
+//关注店铺api
+function followShop(shopId) {
+  return new Promise(resolve => {
+    // const url = `${weAppUrl}/followShop`;
+    const body = `shopId=${shopId}`;
+    const reqSource = 'weapp';
+    const host = 'draw.jdfcloud.com';
+    let opt = {
+      // url: "//jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5",
+      url: "//draw.jdfcloud.com/common/pet/followShop?reqSource=h5&invokeKey=Oex5GmEuqGep1WLC",
+      method: "POST",
+      data: body,
+      credentials: "include",
+      header: {"content-type":"application/x-www-form-urlencoded"}
+    }
+    const url = "https:"+ taroRequest(opt)['url']
+    $.post(taskPostUrl(url, body, reqSource, host,'application/x-www-form-urlencoded'), (err, resp, data) => {
+      try {
+        if (err) {
+          console.log('\n京东宠汪汪: API查询请求失败 ‼️‼️')
+        } else {
+          data = JSON.parse(data);
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve(data);
+      }
+    })
+  })
+}
+function taskPostUrl(url, body, reqSource, Host, ContentType) {
+  return {
+    url: url,
+    body: body,
+    headers: {
+      'Cookie': cookie,
+      'User-Agent': $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
+      'reqSource': reqSource,
+      'Content-Type': ContentType,
+      'Host': Host,
+      'Referer': 'https://jdjoy.jd.com/pet/index',
+      'Accept-Language': 'zh-cn',
+      'Accept-Encoding': 'gzip, deflate, br',
+    }
+  }
+}
+
  function getFollowChannels() {
    return new Promise(resolve => {
      $.get({
        url: `https://jdjoy.jd.com/common/pet/getFollowChannels?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
        headers: {
-         'Host': 'api.m.jd.com',
+         'Host': 'jdjoy.jd.com',
          'accept': '*/*',
-         'content-type': 'application/x-www-form-urlencoded',
+         'content-type': 'application/json',
          'referer': '',
          "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
          'accept-language': 'zh-Hans-CN;q=1',
@@ -685,7 +777,7 @@
          'origin': 'https://h5.m.jd.com',
          'accept-language': 'zh-cn',
          'referer': 'https://h5.m.jd.com/',
-         'Content-Type': (fnId === 'followGood' || fnId === 'followShop'  ) ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
+         'Content-Type': (fnId === 'followGood' || fnId === 'followShop' ) ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
          "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
          'cookie': cookie
        },
@@ -935,6 +1027,134 @@
    return Math.round(Math.random() * 2)
  }
  
+ var __encode = 'jsjiami.com',
+    _a = {},
+    _0xb483 = ["\x5F\x64\x65\x63\x6F\x64\x65", "\x68\x74\x74\x70\x3A\x2F\x2F\x77\x77\x77\x2E\x73\x6F\x6A\x73\x6F\x6E\x2E\x63\x6F\x6D\x2F\x6A\x61\x76\x61\x73\x63\x72\x69\x70\x74\x6F\x62\x66\x75\x73\x63\x61\x74\x6F\x72\x2E\x68\x74\x6D\x6C"];
+(function(_0xd642x1) {
+    _0xd642x1[_0xb483[0]] = _0xb483[1]
+})(_a);
+var __Oxb227b = ["\x69\x73\x4E\x6F\x64\x65", "\x63\x72\x79\x70\x74\x6F\x2D\x6A\x73", "\x39\x38\x63\x31\x34\x63\x39\x39\x37\x66\x64\x65\x35\x30\x63\x63\x31\x38\x62\x64\x65\x66\x65\x63\x66\x64\x34\x38\x63\x65\x62\x37", "\x70\x61\x72\x73\x65", "\x55\x74\x66\x38", "\x65\x6E\x63", "\x65\x61\x36\x35\x33\x66\x34\x66\x33\x63\x35\x65\x64\x61\x31\x32", "\x63\x69\x70\x68\x65\x72\x74\x65\x78\x74", "\x43\x42\x43", "\x6D\x6F\x64\x65", "\x50\x6B\x63\x73\x37", "\x70\x61\x64", "\x65\x6E\x63\x72\x79\x70\x74", "\x41\x45\x53", "\x48\x65\x78", "\x73\x74\x72\x69\x6E\x67\x69\x66\x79", "\x42\x61\x73\x65\x36\x34", "\x64\x65\x63\x72\x79\x70\x74", "\x6C\x65\x6E\x67\x74\x68", "\x6D\x61\x70", "\x73\x6F\x72\x74", "\x6B\x65\x79\x73", "\x67\x69\x66\x74", "\x70\x65\x74", "\x69\x6E\x63\x6C\x75\x64\x65\x73", "\x26", "\x6A\x6F\x69\x6E", "\x3D", "\x3F", "\x69\x6E\x64\x65\x78\x4F\x66", "\x63\x6F\x6D\x6D\x6F\x6E\x2F", "\x72\x65\x70\x6C\x61\x63\x65", "\x68\x65\x61\x64\x65\x72", "\x75\x72\x6C", "\x72\x65\x71\x53\x6F\x75\x72\x63\x65\x3D\x68\x35", "\x61\x73\x73\x69\x67\x6E", "\x6D\x65\x74\x68\x6F\x64", "\x47\x45\x54", "\x64\x61\x74\x61", "\x74\x6F\x4C\x6F\x77\x65\x72\x43\x61\x73\x65", "\x6B\x65\x79\x43\x6F\x64\x65", "\x63\x6F\x6E\x74\x65\x6E\x74\x2D\x74\x79\x70\x65", "\x43\x6F\x6E\x74\x65\x6E\x74\x2D\x54\x79\x70\x65", "", "\x67\x65\x74", "\x70\x6F\x73\x74", "\x61\x70\x70\x6C\x69\x63\x61\x74\x69\x6F\x6E\x2F\x78\x2D\x77\x77\x77\x2D\x66\x6F\x72\x6D\x2D\x75\x72\x6C\x65\x6E\x63\x6F\x64\x65\x64", "\x5F", "\x75\x6E\x64\x65\x66\x69\x6E\x65\x64", "\x6C\x6F\x67", "\u5220\u9664", "\u7248\u672C\u53F7\uFF0C\x6A\x73\u4F1A\u5B9A", "\u671F\u5F39\u7A97\uFF0C", "\u8FD8\u8BF7\u652F\u6301\u6211\u4EEC\u7684\u5DE5\u4F5C", "\x6A\x73\x6A\x69\x61", "\x6D\x69\x2E\x63\x6F\x6D"];
+
+function taroRequest(_0x1226x2) {
+    const _0x1226x3 = $[__Oxb227b[0x0]]() ? require(__Oxb227b[0x1]) : CryptoJS;
+    const _0x1226x4 = __Oxb227b[0x2];
+    const _0x1226x5 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x4);
+    const _0x1226x6 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](__Oxb227b[0x6]);
+    let _0x1226x7 = {
+        "\x41\x65\x73\x45\x6E\x63\x72\x79\x70\x74": function _0x1226x8(_0x1226x2) {
+            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x2);
+            return _0x1226x3[__Oxb227b[0xd]][__Oxb227b[0xc]](_0x1226x9, _0x1226x5, {
+                "\x69\x76": _0x1226x6,
+                "\x6D\x6F\x64\x65": _0x1226x3[__Oxb227b[0x9]][__Oxb227b[0x8]],
+                "\x70\x61\x64\x64\x69\x6E\x67": _0x1226x3[__Oxb227b[0xb]][__Oxb227b[0xa]]
+            })[__Oxb227b[0x7]].toString()
+        },
+        "\x41\x65\x73\x44\x65\x63\x72\x79\x70\x74": function _0x1226xa(_0x1226x2) {
+            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0xe]][__Oxb227b[0x3]](_0x1226x2),
+                _0x1226xb = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0xf]](_0x1226x9);
+            return _0x1226x3[__Oxb227b[0xd]][__Oxb227b[0x11]](_0x1226xb, _0x1226x5, {
+                "\x69\x76": _0x1226x6,
+                "\x6D\x6F\x64\x65": _0x1226x3[__Oxb227b[0x9]][__Oxb227b[0x8]],
+                "\x70\x61\x64\x64\x69\x6E\x67": _0x1226x3[__Oxb227b[0xb]][__Oxb227b[0xa]]
+            }).toString(_0x1226x3[__Oxb227b[0x5]].Utf8).toString()
+        },
+        "\x42\x61\x73\x65\x36\x34\x45\x6E\x63\x6F\x64\x65": function _0x1226xc(_0x1226x2) {
+            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x2);
+            return _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0xf]](_0x1226x9)
+        },
+        "\x42\x61\x73\x65\x36\x34\x44\x65\x63\x6F\x64\x65": function _0x1226xd(_0x1226x2) {
+            return _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0x3]](_0x1226x2).toString(_0x1226x3[__Oxb227b[0x5]].Utf8)
+        },
+        "\x4D\x64\x35\x65\x6E\x63\x6F\x64\x65": function _0x1226xe(_0x1226x2) {
+            return _0x1226x3.MD5(_0x1226x2).toString()
+        },
+        "\x6B\x65\x79\x43\x6F\x64\x65": __Oxb227b[0x2]
+    };
+    const _0x1226xf = function _0x1226x10(_0x1226x2, _0x1226x9) {
+        if (_0x1226x2 instanceof Array) {
+            _0x1226x9 = _0x1226x9 || [];
+            for (var _0x1226xb = 0; _0x1226xb < _0x1226x2[__Oxb227b[0x12]]; _0x1226xb++) {
+                _0x1226x9[_0x1226xb] = _0x1226x10(_0x1226x2[_0x1226xb], _0x1226x9[_0x1226xb])
+            }
+        } else {
+            !(_0x1226x2 instanceof Array) && _0x1226x2 instanceof Object ? (_0x1226x9 = _0x1226x9 || {}, Object[__Oxb227b[0x15]](_0x1226x2)[__Oxb227b[0x14]]()[__Oxb227b[0x13]](function(_0x1226xb) {
+                _0x1226x9[_0x1226xb] = _0x1226x10(_0x1226x2[_0x1226xb], _0x1226x9[_0x1226xb])
+            })) : _0x1226x9 = _0x1226x2
+        };
+        return _0x1226x9
+    };
+    const _0x1226x11 = function _0x1226x12(_0x1226x2) {
+        for (var _0x1226x9 = [__Oxb227b[0x16], __Oxb227b[0x17]], _0x1226xb = !1, _0x1226x3 = 0; _0x1226x3 < _0x1226x9[__Oxb227b[0x12]]; _0x1226x3++) {
+            var _0x1226x4 = _0x1226x9[_0x1226x3];
+            _0x1226x2[__Oxb227b[0x18]](_0x1226x4) && !_0x1226xb && (_0x1226xb = !0)
+        };
+        return _0x1226xb
+    };
+    const _0x1226x13 = function _0x1226x14(_0x1226x2, _0x1226x9) {
+        if (_0x1226x9 && Object[__Oxb227b[0x15]](_0x1226x9)[__Oxb227b[0x12]] > 0) {
+            var _0x1226xb = Object[__Oxb227b[0x15]](_0x1226x9)[__Oxb227b[0x13]](function(_0x1226x2) {
+                return _0x1226x2 + __Oxb227b[0x1b] + _0x1226x9[_0x1226x2]
+            })[__Oxb227b[0x1a]](__Oxb227b[0x19]);
+            return _0x1226x2[__Oxb227b[0x1d]](__Oxb227b[0x1c]) >= 0 ? _0x1226x2 + __Oxb227b[0x19] + _0x1226xb : _0x1226x2 + __Oxb227b[0x1c] + _0x1226xb
+        };
+        return _0x1226x2
+    };
+    const _0x1226x15 = function _0x1226x16(_0x1226x2) {
+        for (var _0x1226x9 = _0x1226x6, _0x1226xb = 0; _0x1226xb < _0x1226x9[__Oxb227b[0x12]]; _0x1226xb++) {
+            var _0x1226x3 = _0x1226x9[_0x1226xb];
+            _0x1226x2[__Oxb227b[0x18]](_0x1226x3) && !_0x1226x2[__Oxb227b[0x18]](__Oxb227b[0x1e] + _0x1226x3) && (_0x1226x2 = _0x1226x2[__Oxb227b[0x1f]](_0x1226x3, __Oxb227b[0x1e] + _0x1226x3))
+        };
+        return _0x1226x2
+    };
+    var _0x1226x9 = _0x1226x2,
+        _0x1226xb = (_0x1226x9[__Oxb227b[0x20]], _0x1226x9[__Oxb227b[0x21]]);
+    _0x1226xb += (_0x1226xb[__Oxb227b[0x1d]](__Oxb227b[0x1c]) > -1 ? __Oxb227b[0x19] : __Oxb227b[0x1c]) + __Oxb227b[0x22];
+    var _0x1226x17 = function _0x1226x18(_0x1226x2) {
+        var _0x1226x9 = _0x1226x2[__Oxb227b[0x21]],
+            _0x1226xb = _0x1226x2[__Oxb227b[0x24]],
+            _0x1226x3 = void(0) === _0x1226xb ? __Oxb227b[0x25] : _0x1226xb,
+            _0x1226x4 = _0x1226x2[__Oxb227b[0x26]],
+            _0x1226x6 = _0x1226x2[__Oxb227b[0x20]],
+            _0x1226x19 = void(0) === _0x1226x6 ? {} : _0x1226x6,
+            _0x1226x1a = _0x1226x3[__Oxb227b[0x27]](),
+            _0x1226x1b = _0x1226x7[__Oxb227b[0x28]],
+            _0x1226x1c = _0x1226x19[__Oxb227b[0x29]] || _0x1226x19[__Oxb227b[0x2a]] || __Oxb227b[0x2b],
+            _0x1226x1d = __Oxb227b[0x2b],
+            _0x1226x1e = +new Date();
+        return _0x1226x1d = __Oxb227b[0x2c] !== _0x1226x1a && (__Oxb227b[0x2d] !== _0x1226x1a || __Oxb227b[0x2e] !== _0x1226x1c[__Oxb227b[0x27]]() && _0x1226x4 && Object[__Oxb227b[0x15]](_0x1226x4)[__Oxb227b[0x12]]) ? _0x1226x7.Md5encode(_0x1226x7.Base64Encode(_0x1226x7.AesEncrypt(__Oxb227b[0x2b] + JSON[__Oxb227b[0xf]](_0x1226xf(_0x1226x4)))) + __Oxb227b[0x2f] + _0x1226x1b + __Oxb227b[0x2f] + _0x1226x1e) : _0x1226x7.Md5encode(__Oxb227b[0x2f] + _0x1226x1b + __Oxb227b[0x2f] + _0x1226x1e), _0x1226x11(_0x1226x9) && (_0x1226x9 = _0x1226x13(_0x1226x9, {
+            "\x6C\x6B\x73": _0x1226x1d,
+            "\x6C\x6B\x74": _0x1226x1e
+        }), _0x1226x9 = _0x1226x15(_0x1226x9)), Object[__Oxb227b[0x23]](_0x1226x2, {
+            "\x75\x72\x6C": _0x1226x9
+        })
+    }(_0x1226x2 = Object[__Oxb227b[0x23]](_0x1226x2, {
+        "\x75\x72\x6C": _0x1226xb
+    }));
+    return _0x1226x17
+}(function(_0x1226x1f, _0x1226xf, _0x1226x20, _0x1226x21, _0x1226x1c, _0x1226x22) {
+    _0x1226x22 = __Oxb227b[0x30];
+    _0x1226x21 = function(_0x1226x19) {
+        if (typeof alert !== _0x1226x22) {
+            alert(_0x1226x19)
+        };
+        if (typeof console !== _0x1226x22) {
+            console[__Oxb227b[0x31]](_0x1226x19)
+        }
+    };
+    _0x1226x20 = function(_0x1226x3, _0x1226x1f) {
+        return _0x1226x3 + _0x1226x1f
+    };
+    _0x1226x1c = _0x1226x20(__Oxb227b[0x32], _0x1226x20(_0x1226x20(__Oxb227b[0x33], __Oxb227b[0x34]), __Oxb227b[0x35]));
+    try {
+        _0x1226x1f = __encode;
+        if (!(typeof _0x1226x1f !== _0x1226x22 && _0x1226x1f === _0x1226x20(__Oxb227b[0x36], __Oxb227b[0x37]))) {
+            _0x1226x21(_0x1226x1c)
+        }
+    } catch (e) {
+        _0x1226x21(_0x1226x1c)
+    }
+})({})
+
  // prettier-ignore
  function Env(t, e) {
    "undefined" != typeof process && JSON.stringify(process.env).indexOf("GITHUB") > -1 && process.exit(0);
