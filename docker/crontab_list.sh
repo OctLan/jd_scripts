@@ -145,3 +145,10 @@
 
 #京喜签到
 0 2 * * *  node /scripts/activity/jx_sign.js >> /scripts/logs/jx_sign.log 2>&1
+
+#燃动夏季
+25 0,6-23/2 * * *  node /scripts/jd_summer_movement.js >>  /scripts/logs/jd_summer_movement.log 2>&1
+
+#燃动夏季下注
+11 12,20 * * *  node /scripts/jd_summer_movement_bet.js >>  /scripts/logs/jd_summer_movement_bet.log 2>&1
+
