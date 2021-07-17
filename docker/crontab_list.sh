@@ -152,3 +152,11 @@
 #燃动夏季下注
 11 12,20 * * *  node /scripts/jd_summer_movement_bet.js >>  /scripts/logs/jd_summer_movement_bet.log 2>&1
 
+#7月粉丝互动
+1 8 * * *  node /scripts/jd_wxFans.js >>  /scripts/logs/jd_wxFans.log 2>&1
+
+#早起福利
+30 6 * * *  node /scripts/jd_goodMorning.js >>  /scripts/logs/jd_goodMorning.log 2>&1
+
+
+
