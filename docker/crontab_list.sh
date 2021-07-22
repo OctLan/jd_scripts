@@ -158,5 +158,8 @@
 #早起福利
 30 6 * * *  node /scripts/jd_goodMorning.js >>  /scripts/logs/jd_goodMorning.log 2>&1
 
+#全民摸冰
+6 9,12 * * * node /scripts/jd_mb.js >>  /scripts/logs/jd_mb.log 2>&1
 
-
+#首页-领京豆-升级赚京豆
+21 9 * * * node /scripts/jd_upgrade.js >>  /scripts/logs/jd_upgrade.log 2>&1
