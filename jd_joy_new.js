@@ -12,15 +12,14 @@
  */
 
  const $ = new Env("宠汪汪二代目")
- console.log('\n====================Hello World====================\n')
- 
- const https = require('https');
+
  const http = require('http');
  const stream = require('stream');
  const zlib = require('zlib');
  const vm = require('vm');
  const PNG = require('png-js');
  const UA = require('./USER_AGENTS.js').USER_AGENT;
+ const fs = require("fs");
  
  
  Math.avg = function average() {
@@ -141,76 +140,6 @@
      // not found
      return -1;
    }
- 
-   runWithCanvas() {
-     const {createCanvas, Image} = require('canvas');
-     const canvas = createCanvas();
-     const ctx = canvas.getContext('2d');
-     const imgBg = new Image();
-     const imgPatch = new Image();
-     const prefix = 'data:image/png;base64,';
- 
-     imgBg.src = prefix + this.rawBg;
-     imgPatch.src = prefix + this.rawPatch;
-     const {naturalWidth: w, naturalHeight: h} = imgBg;
-     canvas.width = w;
-     canvas.height = h;
-     ctx.clearRect(0, 0, w, h);
-     ctx.drawImage(imgBg, 0, 0, w, h);
- 
-     const width = w;
-     const {naturalWidth, naturalHeight} = imgPatch;
-     const posY = this.y + PUZZLE_PAD + ((naturalHeight - PUZZLE_PAD) / 2) - (PUZZLE_GAP / 2);
-     // const cData = ctx.getImageData(0, a.y + 10 + 20 - 4, 360, 8).data;
-     const cData = ctx.getImageData(0, posY, width, PUZZLE_GAP).data;
-     const lumas = [];
- 
-     for (let x = 0; x < width; x++) {
-       var sum = 0;
- 
-       // y xais
-       for (let y = 0; y < PUZZLE_GAP; y++) {
-         var idx = x * 4 + y * (width * 4);
-         var r = cData[idx];
-         var g = cData[idx + 1];
-         var b = cData[idx + 2];
-         var luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
- 
-         sum += luma;
-       }
- 
-       lumas.push(sum / PUZZLE_GAP);
-     }
- 
-     const n = 2; // minium macroscopic image width (px)
-     const margin = naturalWidth - PUZZLE_PAD;
-     const diff = 20; // macroscopic brightness difference
-     const radius = PUZZLE_PAD;
-     for (let i = 0, len = lumas.length - 2 * 4; i < len; i++) {
-       const left = (lumas[i] + lumas[i + 1]) / n;
-       const right = (lumas[i + 2] + lumas[i + 3]) / n;
-       const mi = margin + i;
-       const mLeft = (lumas[mi] + lumas[mi + 1]) / n;
-       const mRigth = (lumas[mi + 2] + lumas[mi + 3]) / n;
- 
-       if (left - right > diff && mLeft - mRigth < -diff) {
-         const pieces = lumas.slice(i + 2, margin + i + 2);
-         const median = pieces.sort((x1, x2) => x1 - x2)[20];
-         const avg = Math.avg(pieces);
- 
-         // noise reducation
-         if (median > left || median > mRigth) return;
-         if (avg > 100) return;
-         // console.table({left,right,mLeft,mRigth,median});
-         // ctx.fillRect(i+n-radius, 0, 1, 360);
-         // console.log(i+n-radius);
-         return i + n - radius;
-       }
-     }
- 
-     // not found
-     return -1;
-   }
  }
  
  const DATA = {
@@ -219,7 +148,7 @@
    "product": "embed",
    "lang": "zh_CN",
  };
- const SERVER = '61.49.99.122';
+ const SERVER = '49.7.27.91';
  
  class JDJRValidator {
    constructor() {
@@ -401,7 +330,7 @@
    return b.join("")
  }
  
- const HZ = 60;
+ const HZ = 25;
  
  class MousePosFaker {
    constructor(puzzleX) {
@@ -527,7 +456,7 @@
    };
  }
  
- let cookiesArr = [], cookie = '', jdFruitShareArr = [], isBox = false, notify, newShareCodes, allMessage = '';
+ let cookiesArr = [], cookie = '', notify;
  $.get = injectToRequest($.get.bind($))
  $.post = injectToRequest($.post.bind($))
  
@@ -545,7 +474,7 @@
        $.isLogin = true;
        $.nickName = '';
        await TotalBean();
-       if (!require('./JS_USER_AGENTS')) {
+       if (!require('./JS_USER_AGENTS').HelloWorld) {
          console.log(`\n【京东账号${$.index}】${$.nickName || $.UserName}：运行环境检测失败\n`);
          continue
        }
@@ -561,45 +490,33 @@
        message = '';
        subTitle = '';
  
-       await run();
-       // await run('detail/v2');
+       await getFriends();
  
+       await run('detail/v2');
+       await run();
        await feed();
  
        let tasks = await taskList();
- 
        for (let tp of tasks.datas) {
          console.log(tp.taskName, tp.receiveStatus)
-         // if (tp.taskName === '每日签到' && tp.receiveStatus === 'chance_left')
-         //   await sign();
  
          if (tp.receiveStatus === 'unreceive') {
            await award(tp.taskType);
-           await $.wait(5000);
+           await $.wait(3000);
          }
          if (tp.taskName === '浏览频道') {
-           for (let i = 0; i < 1; i++) {
+           for (let i = 0; i < 3; i++) {
              console.log(`\t第${i + 1}次浏览频道 检查遗漏`)
              let followChannelList = await getFollowChannels();
              for (let t of followChannelList['datas']) {
                if (!t.status) {
                  console.log('┖', t['channelName'])
-
-                 const body = {
-                  "channelId": t.channelId,
-                  "taskType": "FollowChannel",
-                  "reqSource": "weapp"
-                };
-                const scanMarketRes = await scanMarket('scan', body);
-                console.log(`浏览频道-结果::${JSON.stringify(scanMarketRes)}`)
-
-                // await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel' , "reqSource": "weapp" }))
-
-
-                //await $.wait(5000)
+                 await beforeTask('follow_channel', t.channelId);
+                 await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel'}))
+                 await $.wait(3000)
                }
              }
-             await $.wait(5000)
+             await $.wait(3000)
            }
          }
          if (tp.taskName === '逛会场') {
@@ -610,7 +527,7 @@
                  "marketLink": `${t.marketLink || t.marketLinkH5}`,
                  "taskType": "ScanMarket"
                }))
-               await $.wait(5000)
+               await $.wait(3000)
              }
            }
          }
@@ -618,16 +535,20 @@
            for (let t of tp.followGoodList) {
              if (!t.status) {
                console.log('┖', t.skuName)
+               await beforeTask('follow_good', t.sku)
+               await $.wait(1000)
                await doTask(`sku=${t.sku}`, 'followGood')
-               await $.wait(5000)
+               await $.wait(3000)
              }
            }
          }
          if (tp.taskName === '关注店铺') {
            for (let t of tp.followShops) {
              if (!t.status) {
-                const followShopRes = await followShop(t.shopId);
-                console.log(`关注店铺结果::${JSON.stringify(followShopRes)}`)
+               await beforeTask('follow_shop', t.shopId);
+               await $.wait(1000);
+               await followShop(t.shopId)
+               await $.wait(2000);
              }
            }
          }
@@ -636,95 +557,14 @@
    }
  })()
  
-//小程序逛会场，浏览频道，关注商品API
-function scanMarket(type, body, cType = 'application/json') {
-  return new Promise(resolve => {
-    // const url = `${weAppUrl}/${type}`;
-    const host = `draw.jdfcloud.com`;
-    const reqSource = 'weapp';
-    let opt = {
-      // url: "//jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5",
-      url: `//draw.jdfcloud.com/common/pet/${type}?reqSource=weapp&invokeKey=Oex5GmEuqGep1WLC`,
-      method: "POST",
-      data: body,
-      credentials: "include",
-      header: {"content-type": cType}
-    }
-    const url = "https:"+ taroRequest(opt)['url']
-    if (cType === 'application/json') {
-      body = JSON.stringify(body)
-    }
-    $.post(taskPostUrl(url, body, reqSource, host, cType), (err, resp, data) => {
-      try {
-        if (err) {
-          console.log('\n京东宠汪汪: API查询请求失败 ‼️‼️')
-        } else {
-          data = JSON.parse(data);
-        }
-      } catch (e) {
-        $.logErr(e, resp);
-      } finally {
-        resolve(data);
-      }
-    })
-  })
-}
-//关注店铺api
-function followShop(shopId) {
-  return new Promise(resolve => {
-    // const url = `${weAppUrl}/followShop`;
-    const body = `shopId=${shopId}`;
-    const reqSource = 'weapp';
-    const host = 'draw.jdfcloud.com';
-    let opt = {
-      // url: "//jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5",
-      url: "//draw.jdfcloud.com/common/pet/followShop?reqSource=h5&invokeKey=Oex5GmEuqGep1WLC",
-      method: "POST",
-      data: body,
-      credentials: "include",
-      header: {"content-type":"application/x-www-form-urlencoded"}
-    }
-    const url = "https:"+ taroRequest(opt)['url']
-    $.post(taskPostUrl(url, body, reqSource, host,'application/x-www-form-urlencoded'), (err, resp, data) => {
-      try {
-        if (err) {
-          console.log('\n京东宠汪汪: API查询请求失败 ‼️‼️')
-        } else {
-          data = JSON.parse(data);
-        }
-      } catch (e) {
-        $.logErr(e, resp);
-      } finally {
-        resolve(data);
-      }
-    })
-  })
-}
-function taskPostUrl(url, body, reqSource, Host, ContentType) {
-  return {
-    url: url,
-    body: body,
-    headers: {
-      'Cookie': cookie,
-      'User-Agent': $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
-      'reqSource': reqSource,
-      'Content-Type': ContentType,
-      'Host': Host,
-      'Referer': 'https://jdjoy.jd.com/pet/index',
-      'Accept-Language': 'zh-cn',
-      'Accept-Encoding': 'gzip, deflate, br',
-    }
-  }
-}
-
  function getFollowChannels() {
    return new Promise(resolve => {
      $.get({
-       url: `https://jdjoy.jd.com/common/pet/getFollowChannels?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
+       url: `https://jdjoy.jd.com/common/pet/getFollowChannels?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
        headers: {
-         'Host': 'jdjoy.jd.com',
+         'Host': 'api.m.jd.com',
          'accept': '*/*',
-         'content-type': 'application/json',
+         'content-type': 'application/x-www-form-urlencoded',
          'referer': '',
          "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
          'accept-language': 'zh-Hans-CN;q=1',
@@ -739,8 +579,7 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
  function taskList() {
    return new Promise(resolve => {
      $.get({
-       // url: `https://jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
-       url: `https://jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
+       url: `https://jdjoy.jd.com/common/pet/getPetTaskConfig?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
@@ -766,18 +605,63 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
    })
  }
  
+ function beforeTask(fn, shopId) {
+   return new Promise(resolve => {
+     $.get({
+       url: `https://jdjoy.jd.com/common/pet/icon/click?iconCode=${fn}&linkAddr=${shopId}&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
+       headers: {
+         'Accept': '*/*',
+         'Connection': 'keep-alive',
+         'Content-Type': 'application/json',
+         'Origin': 'https://h5.m.jd.com',
+         'Accept-Language': 'zh-cn',
+         'Host': 'jdjoy.jd.com',
+         'User-Agent': 'jdapp;iPhone;10.0.6;12.4.1;fc13275e23b2613e6aae772533ca6f349d2e0a86;network/wifi;ADID/C51FD279-5C69-4F94-B1C5-890BC8EB501F;model/iPhone11,6;addressid/589374288;appBuild/167724;jdSupportDarkMode/0;Mozilla/5.0 (iPhone; CPU iPhone OS 12_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1',
+         'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html',
+         'cookie': cookie
+       }
+     }, (err, resp, data) => {
+       console.log('before task:', data);
+       resolve();
+     })
+   })
+ }
+ 
+ function followShop(shopId) {
+   return new Promise(resolve => {
+     $.post({
+       url: `https://jdjoy.jd.com/common/pet/followShop?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
+       headers: {
+         'User-Agent': 'jdapp;iPhone;10.0.6;12.4.1;fc13275e23b2613e6aae772533ca6f349d2e0a86;network/wifi;ADID/C51FD279-5C69-4F94-B1C5-890BC8EB501F;model/iPhone11,6;addressid/589374288;appBuild/167724;jdSupportDarkMode/0;Mozilla/5.0 (iPhone; CPU iPhone OS 12_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1',
+         'Accept-Language': 'zh-cn',
+         'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html?babelChannel=ttt12&lng=0.000000&lat=0.000000&sid=87e644ae51ba60e68519b73d1518893w&un_area=12_904_3373_62101',
+         'Host': 'jdjoy.jd.com',
+         'Origin': 'https://h5.m.jd.com',
+         'Accept': '*/*',
+         'Connection': 'keep-alive',
+         'Content-Type': 'application/x-www-form-urlencoded',
+         'cookie': cookie
+       },
+       body: `shopId=${shopId}`
+     }, (err, resp, data) => {
+       console.log(data)
+       resolve();
+     })
+   })
+ }
+ 
  function doTask(body, fnId = 'scan') {
    return new Promise(resolve => {
      $.post({
-       url: `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE` ,
+       url: `https://jdjoy.jd.com/common/pet/${fnId}?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
-         'content-type': (fnId === 'followGood' || fnId === 'followShop'  ) ? 'application/x-www-form-urlencoded' : 'application/json',
+         'content-type': fnId === 'followGood' || fnId === 'followShop' ? 'application/x-www-form-urlencoded' : 'application/json',
          'origin': 'https://h5.m.jd.com',
          'accept-language': 'zh-cn',
          'referer': 'https://h5.m.jd.com/',
-         'Content-Type': (fnId === 'followGood' || fnId === 'followShop' ) ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
+         'Content-Type': fnId === 'followGood' ? 'application/x-www-form-urlencoded' : 'application/json; charset=UTF-8',
          "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
          'cookie': cookie
        },
@@ -802,7 +686,7 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
    feedNum = process.env.feedNum ? process.env.feedNum : 80
    return new Promise(resolve => {
      $.post({
-       url: `https://jdjoy.jd.com/common/pet/enterRoom/h5?invitePin=&reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
+       url: `https://jdjoy.jd.com/common/pet/enterRoom/h5?invitePin=&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
@@ -823,7 +707,7 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
        } else {
          console.log('开始喂食......')
          $.get({
-           url: `https://jdjoy.jd.com/common/pet/feed?feedCount=${feedNum}&reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
+           url: `https://jdjoy.jd.com/common/pet/feed?feedCount=${feedNum}&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
            headers: {
              'Host': 'jdjoy.jd.com',
              'accept': '*/*',
@@ -853,7 +737,7 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
  function award(taskType) {
    return new Promise(resolve => {
      $.get({
-       url: `https://jdjoy.jd.com/common/pet/getFood?reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE&taskType=${taskType}`,
+       url: `https://jdjoy.jd.com/common/pet/getFood?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F&taskType=${taskType}`,
        headers: {
          'Host': 'jdjoy.jd.com',
          'accept': '*/*',
@@ -883,7 +767,7 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
    let level = process.env.JD_JOY_teamLevel ? process.env.JD_JOY_teamLevel : 2
    return new Promise(resolve => {
      $.get({
-       url: `https://jdjoy.jd.com/common/pet/combat/${fn}?teamLevel=${level}&reqSource=h5&invokeKey=NRp8OPxZMFXmGkaE`,
+       url: `https://jdjoy.jd.com/common/pet/combat/${fn}?teamLevel=${level}&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F`,
        headers: {
          'Host': 'jdjoy.jd.com',
          'sec-fetch-mode': 'cors',
@@ -899,26 +783,96 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
        },
      }, async (err, resp, data) => {
        try {
-         console.log('赛跑', data)
-         data = JSON.parse(data);
-         let race = data.data.petRaceResult
- 
-         if (race === 'participate') {
-           console.log('匹配成功！')
-         } else if (race === 'unbegin') {
-           console.log('还未开始！')
-         } else if (race === 'matching') {
-           console.log('正在匹配！')
-           await $.wait(2000)
-           await run()
+         if (fn === 'receive') {
+           console.log('领取赛跑奖励：', data)
          } else {
-           console.log('这是什么！')
+           data = JSON.parse(data);
+           let race = data.data.petRaceResult
+           if (race === 'participate') {
+             console.log('匹配成功！')
+           } else if (race === 'unbegin') {
+             console.log('还未开始！')
+           } else if (race === 'matching') {
+             console.log('正在匹配！')
+             await $.wait(2000)
+             await run()
+           } else if (race === 'unreceive') {
+             console.log('开始领奖')
+             await run('receive')
+           } else if (race === 'time_over') {
+             console.log('不在比赛时间')
+           } else {
+             console.log('这是什么！', data)
+           }
          }
        } catch (e) {
-         $.logErr(e);
+         console.log(e)
        } finally {
          resolve();
        }
+     })
+   })
+ }
+ 
+ function getFriends() {
+   return new Promise((resolve) => {
+     $.post({
+       url: 'https://jdjoy.jd.com/common/pet/enterRoom/h5?invitePin=&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F',
+       headers: {
+         'Host': 'jdjoy.jd.com',
+         'Content-Type': 'application/json',
+         'X-Requested-With': 'com.jingdong.app.mall',
+         'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html?babelChannel=ttt12&sid=445902658831621c5acf782ec27ce21w&un_area=12_904_3373_62101',
+         'Origin': 'https://h5.m.jd.com',
+         "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
+         'Cookie': cookie
+       },
+       body: JSON.stringify({})
+     }, async (err, resp, data) => {
+       await $.wait(1000)
+       $.get({
+         url: 'https://jdjoy.jd.com/common/pet/h5/getFriends?itemsPerPage=20&currentPage=1&reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F',
+         headers: {
+           'Host': 'jdjoy.jd.com',
+           'Accept': '*/*',
+           'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html',
+           "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
+           'cookie': cookie
+         }
+       }, async (err, resp, data) => {
+         data = JSON.parse(data)
+         for (let f of data.datas) {
+           if (f.stealStatus === 'can_steal') {
+             console.log('可偷:', f.friendPin)
+             $.get({
+               url: `https://jdjoy.jd.com/common/pet/enterFriendRoom?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F&friendPin=${encodeURIComponent(f.friendPin)}`,
+               headers: {
+                 'Host': 'jdjoy.jd.com',
+                 'Accept': '*/*',
+                 'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html',
+                 "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
+                 'cookie': cookie
+               }
+             }, (err, resp, data) => {
+               $.get({
+                 url: `https://jdjoy.jd.com/common/pet/getRandomFood?reqSource=h5&invokeKey=qRKHmL4sna8ZOP9F&friendPin=${encodeURIComponent(f.friendPin)}`,
+                 headers: {
+                   'Host': 'jdjoy.jd.com',
+                   'Accept': '*/*',
+                   'Referer': 'https://h5.m.jd.com/babelDiy/Zeus/2wuqXrZrhygTQzYA7VufBEpj4amH/index.html',
+                   "User-Agent": $.isNode() ? (process.env.JD_USER_AGENT ? process.env.JD_USER_AGENT : (require('./USER_AGENTS').USER_AGENT)) : ($.getdata('JDUA') ? $.getdata('JDUA') : "jdapp;iPhone;9.4.4;14.3;network/4g;Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1"),
+                   'cookie': cookie
+                 }
+               }, (err, resp, data) => {
+                 data = JSON.parse(data)
+                 console.log('偷狗粮:', data.errorCode, data.data)
+               })
+             })
+           }
+           await $.wait(1500)
+         }
+         resolve();
+       })
      })
    })
  }
@@ -928,7 +882,6 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
      notify = $.isNode() ? require('./sendNotify') : '';
      //Node.js用户请在jdCookie.js处填写京东ck;
      const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
-     const jdPetShareCodes = '';
      //IOS等用户直接用NobyDa的jd cookie
      if ($.isNode()) {
        Object.keys(jdCookieNode).forEach((item) => {
@@ -942,18 +895,6 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
        cookiesArr = [$.getdata('CookieJD'), $.getdata('CookieJD2'), ...jsonParse($.getdata('CookiesJD') || "[]").map(item => item.cookie)].filter(item => !!item);
      }
      console.log(`共${cookiesArr.length}个京东账号\n`)
-     $.shareCodesArr = [];
-     if ($.isNode()) {
-       Object.keys(jdPetShareCodes).forEach((item) => {
-         if (jdPetShareCodes[item]) {
-           $.shareCodesArr.push(jdPetShareCodes[item])
-         }
-       })
-     } else {
-       // if ($.getdata('jd_pet_inviter')) $.shareCodesArr = $.getdata('jd_pet_inviter').split('\n').filter(item => !!item);
-       // console.log(`\nBoxJs设置的${$.name}好友邀请码:${$.getdata('jd_pet_inviter') ? $.getdata('jd_pet_inviter') : '暂无'}\n`);
-     }
-     // console.log(`您提供了${$.shareCodesArr.length}个账号的东东萌宠助力码\n`);
      resolve()
    })
  }
@@ -1017,144 +958,11 @@ function taskPostUrl(url, body, reqSource, Host, ContentType) {
  
  function writeFile(text) {
    if ($.isNode()) {
-     const fs = require('fs');
      fs.writeFile('a.json', text, () => {
      })
    }
  }
  
- function random() {
-   return Math.round(Math.random() * 2)
- }
- 
- var __encode = 'jsjiami.com',
-    _a = {},
-    _0xb483 = ["\x5F\x64\x65\x63\x6F\x64\x65", "\x68\x74\x74\x70\x3A\x2F\x2F\x77\x77\x77\x2E\x73\x6F\x6A\x73\x6F\x6E\x2E\x63\x6F\x6D\x2F\x6A\x61\x76\x61\x73\x63\x72\x69\x70\x74\x6F\x62\x66\x75\x73\x63\x61\x74\x6F\x72\x2E\x68\x74\x6D\x6C"];
-(function(_0xd642x1) {
-    _0xd642x1[_0xb483[0]] = _0xb483[1]
-})(_a);
-var __Oxb227b = ["\x69\x73\x4E\x6F\x64\x65", "\x63\x72\x79\x70\x74\x6F\x2D\x6A\x73", "\x39\x38\x63\x31\x34\x63\x39\x39\x37\x66\x64\x65\x35\x30\x63\x63\x31\x38\x62\x64\x65\x66\x65\x63\x66\x64\x34\x38\x63\x65\x62\x37", "\x70\x61\x72\x73\x65", "\x55\x74\x66\x38", "\x65\x6E\x63", "\x65\x61\x36\x35\x33\x66\x34\x66\x33\x63\x35\x65\x64\x61\x31\x32", "\x63\x69\x70\x68\x65\x72\x74\x65\x78\x74", "\x43\x42\x43", "\x6D\x6F\x64\x65", "\x50\x6B\x63\x73\x37", "\x70\x61\x64", "\x65\x6E\x63\x72\x79\x70\x74", "\x41\x45\x53", "\x48\x65\x78", "\x73\x74\x72\x69\x6E\x67\x69\x66\x79", "\x42\x61\x73\x65\x36\x34", "\x64\x65\x63\x72\x79\x70\x74", "\x6C\x65\x6E\x67\x74\x68", "\x6D\x61\x70", "\x73\x6F\x72\x74", "\x6B\x65\x79\x73", "\x67\x69\x66\x74", "\x70\x65\x74", "\x69\x6E\x63\x6C\x75\x64\x65\x73", "\x26", "\x6A\x6F\x69\x6E", "\x3D", "\x3F", "\x69\x6E\x64\x65\x78\x4F\x66", "\x63\x6F\x6D\x6D\x6F\x6E\x2F", "\x72\x65\x70\x6C\x61\x63\x65", "\x68\x65\x61\x64\x65\x72", "\x75\x72\x6C", "\x72\x65\x71\x53\x6F\x75\x72\x63\x65\x3D\x68\x35", "\x61\x73\x73\x69\x67\x6E", "\x6D\x65\x74\x68\x6F\x64", "\x47\x45\x54", "\x64\x61\x74\x61", "\x74\x6F\x4C\x6F\x77\x65\x72\x43\x61\x73\x65", "\x6B\x65\x79\x43\x6F\x64\x65", "\x63\x6F\x6E\x74\x65\x6E\x74\x2D\x74\x79\x70\x65", "\x43\x6F\x6E\x74\x65\x6E\x74\x2D\x54\x79\x70\x65", "", "\x67\x65\x74", "\x70\x6F\x73\x74", "\x61\x70\x70\x6C\x69\x63\x61\x74\x69\x6F\x6E\x2F\x78\x2D\x77\x77\x77\x2D\x66\x6F\x72\x6D\x2D\x75\x72\x6C\x65\x6E\x63\x6F\x64\x65\x64", "\x5F", "\x75\x6E\x64\x65\x66\x69\x6E\x65\x64", "\x6C\x6F\x67", "\u5220\u9664", "\u7248\u672C\u53F7\uFF0C\x6A\x73\u4F1A\u5B9A", "\u671F\u5F39\u7A97\uFF0C", "\u8FD8\u8BF7\u652F\u6301\u6211\u4EEC\u7684\u5DE5\u4F5C", "\x6A\x73\x6A\x69\x61", "\x6D\x69\x2E\x63\x6F\x6D"];
-
-function taroRequest(_0x1226x2) {
-    const _0x1226x3 = $[__Oxb227b[0x0]]() ? require(__Oxb227b[0x1]) : CryptoJS;
-    const _0x1226x4 = __Oxb227b[0x2];
-    const _0x1226x5 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x4);
-    const _0x1226x6 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](__Oxb227b[0x6]);
-    let _0x1226x7 = {
-        "\x41\x65\x73\x45\x6E\x63\x72\x79\x70\x74": function _0x1226x8(_0x1226x2) {
-            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x2);
-            return _0x1226x3[__Oxb227b[0xd]][__Oxb227b[0xc]](_0x1226x9, _0x1226x5, {
-                "\x69\x76": _0x1226x6,
-                "\x6D\x6F\x64\x65": _0x1226x3[__Oxb227b[0x9]][__Oxb227b[0x8]],
-                "\x70\x61\x64\x64\x69\x6E\x67": _0x1226x3[__Oxb227b[0xb]][__Oxb227b[0xa]]
-            })[__Oxb227b[0x7]].toString()
-        },
-        "\x41\x65\x73\x44\x65\x63\x72\x79\x70\x74": function _0x1226xa(_0x1226x2) {
-            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0xe]][__Oxb227b[0x3]](_0x1226x2),
-                _0x1226xb = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0xf]](_0x1226x9);
-            return _0x1226x3[__Oxb227b[0xd]][__Oxb227b[0x11]](_0x1226xb, _0x1226x5, {
-                "\x69\x76": _0x1226x6,
-                "\x6D\x6F\x64\x65": _0x1226x3[__Oxb227b[0x9]][__Oxb227b[0x8]],
-                "\x70\x61\x64\x64\x69\x6E\x67": _0x1226x3[__Oxb227b[0xb]][__Oxb227b[0xa]]
-            }).toString(_0x1226x3[__Oxb227b[0x5]].Utf8).toString()
-        },
-        "\x42\x61\x73\x65\x36\x34\x45\x6E\x63\x6F\x64\x65": function _0x1226xc(_0x1226x2) {
-            var _0x1226x9 = _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x4]][__Oxb227b[0x3]](_0x1226x2);
-            return _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0xf]](_0x1226x9)
-        },
-        "\x42\x61\x73\x65\x36\x34\x44\x65\x63\x6F\x64\x65": function _0x1226xd(_0x1226x2) {
-            return _0x1226x3[__Oxb227b[0x5]][__Oxb227b[0x10]][__Oxb227b[0x3]](_0x1226x2).toString(_0x1226x3[__Oxb227b[0x5]].Utf8)
-        },
-        "\x4D\x64\x35\x65\x6E\x63\x6F\x64\x65": function _0x1226xe(_0x1226x2) {
-            return _0x1226x3.MD5(_0x1226x2).toString()
-        },
-        "\x6B\x65\x79\x43\x6F\x64\x65": __Oxb227b[0x2]
-    };
-    const _0x1226xf = function _0x1226x10(_0x1226x2, _0x1226x9) {
-        if (_0x1226x2 instanceof Array) {
-            _0x1226x9 = _0x1226x9 || [];
-            for (var _0x1226xb = 0; _0x1226xb < _0x1226x2[__Oxb227b[0x12]]; _0x1226xb++) {
-                _0x1226x9[_0x1226xb] = _0x1226x10(_0x1226x2[_0x1226xb], _0x1226x9[_0x1226xb])
-            }
-        } else {
-            !(_0x1226x2 instanceof Array) && _0x1226x2 instanceof Object ? (_0x1226x9 = _0x1226x9 || {}, Object[__Oxb227b[0x15]](_0x1226x2)[__Oxb227b[0x14]]()[__Oxb227b[0x13]](function(_0x1226xb) {
-                _0x1226x9[_0x1226xb] = _0x1226x10(_0x1226x2[_0x1226xb], _0x1226x9[_0x1226xb])
-            })) : _0x1226x9 = _0x1226x2
-        };
-        return _0x1226x9
-    };
-    const _0x1226x11 = function _0x1226x12(_0x1226x2) {
-        for (var _0x1226x9 = [__Oxb227b[0x16], __Oxb227b[0x17]], _0x1226xb = !1, _0x1226x3 = 0; _0x1226x3 < _0x1226x9[__Oxb227b[0x12]]; _0x1226x3++) {
-            var _0x1226x4 = _0x1226x9[_0x1226x3];
-            _0x1226x2[__Oxb227b[0x18]](_0x1226x4) && !_0x1226xb && (_0x1226xb = !0)
-        };
-        return _0x1226xb
-    };
-    const _0x1226x13 = function _0x1226x14(_0x1226x2, _0x1226x9) {
-        if (_0x1226x9 && Object[__Oxb227b[0x15]](_0x1226x9)[__Oxb227b[0x12]] > 0) {
-            var _0x1226xb = Object[__Oxb227b[0x15]](_0x1226x9)[__Oxb227b[0x13]](function(_0x1226x2) {
-                return _0x1226x2 + __Oxb227b[0x1b] + _0x1226x9[_0x1226x2]
-            })[__Oxb227b[0x1a]](__Oxb227b[0x19]);
-            return _0x1226x2[__Oxb227b[0x1d]](__Oxb227b[0x1c]) >= 0 ? _0x1226x2 + __Oxb227b[0x19] + _0x1226xb : _0x1226x2 + __Oxb227b[0x1c] + _0x1226xb
-        };
-        return _0x1226x2
-    };
-    const _0x1226x15 = function _0x1226x16(_0x1226x2) {
-        for (var _0x1226x9 = _0x1226x6, _0x1226xb = 0; _0x1226xb < _0x1226x9[__Oxb227b[0x12]]; _0x1226xb++) {
-            var _0x1226x3 = _0x1226x9[_0x1226xb];
-            _0x1226x2[__Oxb227b[0x18]](_0x1226x3) && !_0x1226x2[__Oxb227b[0x18]](__Oxb227b[0x1e] + _0x1226x3) && (_0x1226x2 = _0x1226x2[__Oxb227b[0x1f]](_0x1226x3, __Oxb227b[0x1e] + _0x1226x3))
-        };
-        return _0x1226x2
-    };
-    var _0x1226x9 = _0x1226x2,
-        _0x1226xb = (_0x1226x9[__Oxb227b[0x20]], _0x1226x9[__Oxb227b[0x21]]);
-    _0x1226xb += (_0x1226xb[__Oxb227b[0x1d]](__Oxb227b[0x1c]) > -1 ? __Oxb227b[0x19] : __Oxb227b[0x1c]) + __Oxb227b[0x22];
-    var _0x1226x17 = function _0x1226x18(_0x1226x2) {
-        var _0x1226x9 = _0x1226x2[__Oxb227b[0x21]],
-            _0x1226xb = _0x1226x2[__Oxb227b[0x24]],
-            _0x1226x3 = void(0) === _0x1226xb ? __Oxb227b[0x25] : _0x1226xb,
-            _0x1226x4 = _0x1226x2[__Oxb227b[0x26]],
-            _0x1226x6 = _0x1226x2[__Oxb227b[0x20]],
-            _0x1226x19 = void(0) === _0x1226x6 ? {} : _0x1226x6,
-            _0x1226x1a = _0x1226x3[__Oxb227b[0x27]](),
-            _0x1226x1b = _0x1226x7[__Oxb227b[0x28]],
-            _0x1226x1c = _0x1226x19[__Oxb227b[0x29]] || _0x1226x19[__Oxb227b[0x2a]] || __Oxb227b[0x2b],
-            _0x1226x1d = __Oxb227b[0x2b],
-            _0x1226x1e = +new Date();
-        return _0x1226x1d = __Oxb227b[0x2c] !== _0x1226x1a && (__Oxb227b[0x2d] !== _0x1226x1a || __Oxb227b[0x2e] !== _0x1226x1c[__Oxb227b[0x27]]() && _0x1226x4 && Object[__Oxb227b[0x15]](_0x1226x4)[__Oxb227b[0x12]]) ? _0x1226x7.Md5encode(_0x1226x7.Base64Encode(_0x1226x7.AesEncrypt(__Oxb227b[0x2b] + JSON[__Oxb227b[0xf]](_0x1226xf(_0x1226x4)))) + __Oxb227b[0x2f] + _0x1226x1b + __Oxb227b[0x2f] + _0x1226x1e) : _0x1226x7.Md5encode(__Oxb227b[0x2f] + _0x1226x1b + __Oxb227b[0x2f] + _0x1226x1e), _0x1226x11(_0x1226x9) && (_0x1226x9 = _0x1226x13(_0x1226x9, {
-            "\x6C\x6B\x73": _0x1226x1d,
-            "\x6C\x6B\x74": _0x1226x1e
-        }), _0x1226x9 = _0x1226x15(_0x1226x9)), Object[__Oxb227b[0x23]](_0x1226x2, {
-            "\x75\x72\x6C": _0x1226x9
-        })
-    }(_0x1226x2 = Object[__Oxb227b[0x23]](_0x1226x2, {
-        "\x75\x72\x6C": _0x1226xb
-    }));
-    return _0x1226x17
-}(function(_0x1226x1f, _0x1226xf, _0x1226x20, _0x1226x21, _0x1226x1c, _0x1226x22) {
-    _0x1226x22 = __Oxb227b[0x30];
-    _0x1226x21 = function(_0x1226x19) {
-        if (typeof alert !== _0x1226x22) {
-            alert(_0x1226x19)
-        };
-        if (typeof console !== _0x1226x22) {
-            console[__Oxb227b[0x31]](_0x1226x19)
-        }
-    };
-    _0x1226x20 = function(_0x1226x3, _0x1226x1f) {
-        return _0x1226x3 + _0x1226x1f
-    };
-    _0x1226x1c = _0x1226x20(__Oxb227b[0x32], _0x1226x20(_0x1226x20(__Oxb227b[0x33], __Oxb227b[0x34]), __Oxb227b[0x35]));
-    try {
-        _0x1226x1f = __encode;
-        if (!(typeof _0x1226x1f !== _0x1226x22 && _0x1226x1f === _0x1226x20(__Oxb227b[0x36], __Oxb227b[0x37]))) {
-            _0x1226x21(_0x1226x1c)
-        }
-    } catch (e) {
-        _0x1226x21(_0x1226x1c)
-    }
-})({})
-
  // prettier-ignore
  function Env(t, e) {
    "undefined" != typeof process && JSON.stringify(process.env).indexOf("GITHUB") > -1 && process.exit(0);
