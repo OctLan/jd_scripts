@@ -163,3 +163,8 @@
 
 #首页-领京豆-升级赚京豆
 21 9 * * * node /scripts/jd_upgrade.js >>  /scripts/logs/jd_upgrade.log 2>&1
+
+#翻翻乐
+1 6-21/1 * * * node /scripts/jd_618redpacket.js >>  /scripts/logs/jd_618redpacket.log 2>&1
+
+
