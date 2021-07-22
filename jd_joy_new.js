@@ -505,19 +505,19 @@
            await $.wait(3000);
          }
          if (tp.taskName === '浏览频道') {
-           for (let i = 0; i < 3; i++) {
-             console.log(`\t第${i + 1}次浏览频道 检查遗漏`)
-             let followChannelList = await getFollowChannels();
-             for (let t of followChannelList['datas']) {
-               if (!t.status) {
-                 console.log('┖', t['channelName'])
-                 await beforeTask('follow_channel', t.channelId);
-                 await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel'}))
-                 await $.wait(3000)
-               }
-             }
-             await $.wait(3000)
-           }
+          //  for (let i = 0; i < 3; i++) {
+          //    console.log(`\t第${i + 1}次浏览频道 检查遗漏`)
+          //    let followChannelList = await getFollowChannels();
+          //    for (let t of followChannelList['datas']) {
+          //      if (!t.status) {
+          //        console.log('┖', t['channelName'])
+          //        await beforeTask('follow_channel', t.channelId);
+          //        await doTask(JSON.stringify({"channelId": t.channelId, "taskType": 'FollowChannel'}))
+          //        await $.wait(3000)
+          //      }
+          //    }
+          //    await $.wait(3000)
+          //  }
          }
          if (tp.taskName === '逛会场') {
            for (let t of tp.scanMarketList) {
