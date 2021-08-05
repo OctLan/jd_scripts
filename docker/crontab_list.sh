@@ -169,3 +169,6 @@
 
 #京喜财富岛提现
 59 11,12,23 * * * node /scripts/jd_cfdtx.js >>  /scripts/logs/jd_cfdtx.log 2>&1
+
+#店铺签到，各类店铺签到，有新的店铺直接添加token即可
+2 2 * * * node /scripts/jd_dpqd.js >>  /scripts/logs/jd_dpqd.log 2>&1
