@@ -8,8 +8,8 @@ LABEL AUTHOR="none" \
 ENV DEFAULT_LIST_FILE=crontab_list.sh \
     CUSTOM_LIST_MERGE_TYPE=append \
     COOKIES_LIST=/scripts/logs/cookies.list \
-    REPO_URL=https://github.com/Annyoo2021/scripts.git \
-    REPO_BRANCH=main
+    REPO_URL=https://github.com/OctLan/jd_scripts.git \
+    REPO_BRANCH=master
 
 RUN set -ex \
     && apk update \
